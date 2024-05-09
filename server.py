@@ -2,45 +2,52 @@ import socket
 import json
 import redis
 
-# Redis connection
+# Initialize Redis client
 redis_client = redis.Redis(host='localhost', port=6379, db=0)
+
+# Define the server address
+server_address = ('localhost', 3001)
 
 # Create a TCP socket
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-# Bind the socket to a host and port
-server_address = ('localhost', 12345)
 server_socket.bind(server_address)
+server_socket.listen(1)
 
-# Listen for incoming connections
-server_socket.listen(5)
-
-print("Server is listening for incoming connections...")
+print("Waiting for a connection...")
 
 while True:
-    # Accept a connection
-    client_socket, client_address = server_socket.accept()
-    print(f"Connection from {client_address} established.")
+    # Wait for a connection
+    connection, client_address = server_socket.accept()
+    print("Connection established with", client_address)
 
-    # Receive data from the client
-    data = b''
-    while True:
-        chunk = client_socket.recv(1024)
-        if not chunk:
-            break
-        data += chunk
-
-    if data:
-        # Deserialize JSON data
-        try:
-            data = json.loads(data.decode())
-            # Store data in Redis
-            patient_id = data.get('patient_id')
-            vital_signs = data.get('vital_signs')
-            redis_client.set(patient_id, json.dumps(vital_signs))
-            print(f"Data received and stored for patient ID: {patient_id}")
-        except json.decoder.JSONDecodeError as e:
-            print("Error decoding JSON:", e)
-
-    # Close the client socket
-    client_socket.close()
+    try:
+        buffer = b''  # Initialize buffer to store received data
+        while True:
+            # Receive data from the client
+            received_data = connection.recv(4096)
+            if not received_data:
+                break
+            
+            buffer += received_data
+            # Split received data at delimiter ('\n') to extract individual JSON objects
+            while b'\n' in buffer:
+                json_str, buffer = buffer.split(b'\n', 1)
+                # Deserialize JSON data
+                data = json.loads(json_str.decode())
+                
+                # Extract relevant information
+                patient_id = data.get('patient_id')
+                ecg_data = data.get('vital_signs', [])
+                print(f"Data received for patient ID: {patient_id, ecg_data[:5]}...")
+                
+                # Store data in Redis
+                redis_client.set(patient_id, json.dumps(ecg_data))
+                print("Data stored in Redis")
+                
+    except Exception as e:
+        print("An error occurred:", e)
+        break
+    
+    finally:
+        # Close the connection
+        connection.close()
