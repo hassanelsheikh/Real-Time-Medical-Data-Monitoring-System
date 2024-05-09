@@ -37,12 +37,18 @@ while True:
                 
                 # Extract relevant information
                 patient_id = data.get('patient_id')
-                ecg_data = data.get('vital_signs', [])
-                print(f"Data received for patient ID: {patient_id, ecg_data[:5]}...")
+                ecg_data = data.get('ecg_value')
+                print(f"Data received for patient ID: {patient_id, ecg_data}...")
                 
-                # Store data in Redis
-                redis_client.set(patient_id, json.dumps(ecg_data))
-                print("Data stored in Redis")
+                # Check if the received data is different from the data already stored in Redis
+                old_ecg_data = redis_client.get(patient_id)
+                print("Old data in Redis", old_ecg_data)
+                if old_ecg_data != json.dumps(ecg_data):
+                    # Store new data in Redis
+                    redis_client.set(patient_id, json.dumps(ecg_data))
+                    print("Data stored in Redis", patient_id, "...")
+                else:
+                    print("Received data is the same as the one in Redis. Ignoring...")
                 
     except Exception as e:
         print("An error occurred:", e)

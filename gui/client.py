@@ -10,36 +10,30 @@ server_address = ('localhost', 3001)
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect(server_address)
 
-#5 patients with different ECG data
-patients = {
-    # Patient 1
-    1: np.random.normal(loc=0, scale=1, size=100),
-    # Patient 2
-    2: np.random.normal(loc=0, scale=1, size=100),
-    # Patient 3
-    3: np.random.normal(loc=0, scale=1, size=100),
-    # Patient 4
-    4: np.random.normal(loc=0, scale=1, size=100),
-    # Patient 5
-    5: np.random.normal(loc=0, scale=1, size=100),
-}
-
-#send ECG data for each patient to server
+# Define the number of patients
+num_patients = 5
 
 while True:
-    #send ECG for each patient at the same time
-    for patient_id, ecg_data in patients.items():
+    # Generate and send one value for each patient
+    for patient_id in range(1, num_patients + 1):
+        # Generate a single ECG value for the patient
+        ecg_value = np.random.normal(loc=0, scale=1)
+        
+        # Create data dictionary for the patient
         data = {
             'patient_id': patient_id,
-            'vital_signs': ecg_data.tolist()
+            'ecg_value': ecg_value
         }
+        
         # Serialize the data
         json_str = json.dumps(data)
+        
         # Send the data to the server
         client_socket.sendall(json_str.encode() + b'\n')
-        print(f"Data sent for patient ID: {patient_id}...")
-    # Wait for 1 second
-
-    time.sleep(1)
-
-
+        print(f"Data sent for patient ID: {patient_id}...", ecg_value)
+        
+        # Sleep for 10 milliseconds before sending data for the next patient
+        time.sleep(0.01)
+    
+    # Wait for a short interval before sending the next batch of data
+    time.sleep(0.1)
