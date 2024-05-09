@@ -2,11 +2,9 @@ import tkinter as tk
 from tkinter import messagebox
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import json
 import redis
 import threading
 import time
-
 
 # Initialize Redis client
 redis_client = redis.Redis(host='localhost', port=6379, db=0)
@@ -25,8 +23,8 @@ def plot_ecg(patient_id, ecg_data_array):
     ax.grid(True)
     
     # Adjust dynamic range based on the number of data points
-    if len(ecg_data_array) > 100:
-        start_index = len(ecg_data_array) - 100
+    if len(ecg_data_array) > 20:
+        start_index = len(ecg_data_array) - 20
     else:
         start_index = 0
     
@@ -38,30 +36,29 @@ def monitor_redis(patient_id, ecg_data_array):
     global terminate_monitoring
     while not terminate_monitoring.is_set():
         ecg_data = redis_client.get(patient_id)
-        print(ecg_data)
         if ecg_data:
-            if isinstance(ecg_data, float):  # Check if ecg_data is a single float value
-                ecg_data_array.append(ecg_data)  # Append the float value directly
-            else:
-                ecg_data = float(ecg_data)  # Convert the string to float
-                ecg_data_array.append(ecg_data)  # Append the converted float value
-            print(f"Updated ECG data array for patient ID {patient_id}: {ecg_data_array}")
+            ecg_data = float(ecg_data)  # Convert the string to float
+            ecg_data_array.append(ecg_data)  # Append the converted float value
             # Plot the updated ECG data
             plot_ecg(patient_id, ecg_data_array)
         time.sleep(0.1)  # Adjust the sleep time as needed for real-time updates
 
-# Function to stop the previous monitoring thread
-def stop_monitoring():
+# Function to stop the monitoring thread
+def stop_monitoring_thread():
     global monitoring_thread, terminate_monitoring
     if monitoring_thread:
-        terminate_monitoring.set()  # Set the termination event
-        monitoring_thread.join()  # Wait for the thread to terminate
-        terminate_monitoring.clear()  # Reset the event
-        monitoring_thread = None  # Reset the thread variable
+        terminate_monitoring.set()
+        monitoring_thread.join()
+        monitoring_thread = None
+        terminate_monitoring.clear()
+        canvas.draw_idle()  # Ensure the canvas is properly updated
 
 # Function to handle search button click
 def search_patient():
     global monitoring_thread
+    if monitoring_thread:
+        stop_monitoring_thread()  # Stop the previous monitoring thread if it's running
+    
     patient_id = entry.get()
     if not patient_id:
         messagebox.showerror("Error", "Please enter a valid Patient ID!")
@@ -71,7 +68,6 @@ def search_patient():
         messagebox.showerror("Error", "No ECG data found for Patient ID: " + patient_id)
         return
     
-    stop_monitoring()  # Stop the previous monitoring thread
     ecg_data_array = []  # Initialize an empty array to store ECG data
     # Start a new thread to monitor Redis for new data
     monitoring_thread = threading.Thread(target=monitor_redis, args=(patient_id, ecg_data_array))
@@ -89,6 +85,9 @@ entry.pack()
 
 search_button = tk.Button(root, text="Search", command=search_patient)
 search_button.pack()
+
+stopButton = tk.Button(root, text="Stop", command=stop_monitoring_thread)
+stopButton.pack()
 
 # Create a matplotlib figure and canvas
 fig, ax = plt.subplots()
