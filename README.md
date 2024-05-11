@@ -98,13 +98,13 @@ The viewer component provides a GUI for users to search for patient data stored 
 
 ##Screenshots
 
-#UI 
+# UI 
 ![image](https://github.com/hassanelsheikh/Real-Time-Medical-Data-Monitoring-System/assets/101064451/58f26a47-2545-4ea8-a9d1-046c67e09802)
 
-#Snapshots of recieved data
+# Snapshots of recieved data
 ![image](https://github.com/hassanelsheikh/Real-Time-Medical-Data-Monitoring-System/assets/101064451/050fc8eb-3db7-4f43-b5a6-253f3a91289a)
 
-#User has to be registered in database, we added ids from (1 to 5)
+# User has to be registered in database, we added ids from (1 to 5)
 any other id would cause an error message
 
 ![image](https://github.com/hassanelsheikh/Real-Time-Medical-Data-Monitoring-System/assets/101064451/40a05983-580b-4094-addd-a80e4b11b84c)
